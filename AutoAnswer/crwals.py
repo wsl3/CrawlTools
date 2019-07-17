@@ -45,7 +45,9 @@ def getTime(flag=1):
     res = time.strftime("%Y/%m/%d %H:%M:%S", time.localtime(now))
     return res
 
-
+# 使用Xpath解析网页获取答案
+def get_answers(url):
+    pass
 
 def get_proxies():
     res = requests.get("http://127.0.0.1:5010/get_all")
@@ -57,6 +59,9 @@ def get_proxy():
 def delete_proxies(proxy):
     requests.get("http://127.0.0.1:5010/delete/?proxy={}".format(proxy))
 
+def check_proxies():
+    res = requests.get("http://127.0.0.1:5010/get_status")
+    return res.json()["useful_proxy"]
 
 def sendRequests(url, proxy, **kwargs):
     ktimes = randint(200,500)
@@ -78,7 +83,7 @@ def sendRequests(url, proxy, **kwargs):
         "http": f"http://{proxy}",
     }
     url = f'https://www.wjx.cn/joinnew/processjq.ashx?curid={curid}&starttime={starttime}&source=directphone&submittype=1&ktimes={ktimes}&hlv=1&rn={kwargs.get("rn")}&t={t}&jqnonce={kwargs.get("jqnonce")}&jqsign={jqsign}'
-    submitdata = '1$1}2$1}3$5000}4$打工}5$2}6$阿萨德}7$阿萨德}8$3|4}9$2}10$2}11$2}12$2}13$3}14$4|5}15$1}16$水电费}17$大师傅}18$大师傅}19$水电费}20$1'
+    submitdata = '1$%d}2$%d}3$5000}4$打工}5$2}6$阿萨德}7$阿萨德}8$3|4}9$2}10$2}11$2}12$2}13$3}14$4|5}15$1}16$水电费}17$大师傅}18$大师傅}19$水电费}20$1'%(randint(1,4),randint(1,2))
     data = {
         "submitdata": submitdata,
     }
@@ -86,13 +91,12 @@ def sendRequests(url, proxy, **kwargs):
     while leftry > 0:
         try:
             res = requests.post(url, headers=headers, data=data, proxies=proxies)
-
-            print(res.headers,"\t",res.text,"\t")
-            time.sleep(0.5)
+            if(res.text == "22"):
+                print(f"代理 {proxy} 请求失败\t", res.text)
+            else:
+                print(f"代理 {proxy} 请求成功\t", res.text)
             return
-
         except(Exception):
-
             leftry -= 1
         finally:
             res.close()
@@ -105,16 +109,19 @@ def main(url):
     msg = get_jqnonce(url, proxy)
 
     while True:
+        if check_proxies() == 0:
+            print("当前无可用代理,等待五秒钟后继续")
+            time.sleep(5)
+            continue
         proxies = get_proxies()
         for proxy in proxies:
             sendRequests(url, proxy, **msg)
 
 
+
 if __name__ == "__main__":
     url = "https://www.wjx.cn/m/42808662.aspx"
     curid = 42808662
-
-
     main(url)
 
 
